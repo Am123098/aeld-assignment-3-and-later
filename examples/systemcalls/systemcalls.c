@@ -1,4 +1,8 @@
 #include "systemcalls.h"
+#include <fcntl.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/wait.h>
 
 /**
  * @param cmd the command to execute with system()
@@ -17,7 +21,7 @@ bool do_system(const char *cmd)
  *   or false() if it returned a failure
 */
 
-    return true;
+    return (system(cmd) == 0);
 }
 
 /**
@@ -45,9 +49,6 @@ bool do_exec(int count, ...)
         command[i] = va_arg(args, char *);
     }
     command[count] = NULL;
-    // this line is to avoid a compile warning before your implementation is complete
-    // and may be removed
-    command[count] = command[count];
 
 /*
  * TODO:
@@ -61,7 +62,26 @@ bool do_exec(int count, ...)
 
     va_end(args);
 
-    return true;
+    int pid = fork();
+    if (pid < 0) {
+        return false; // fork failed
+    } else if (pid == 0) {
+        execv(command[0], command);
+        _exit(EXIT_FAILURE);
+    } else {
+        int status;
+        if (waitpid(pid, &status, 0) == -1) {
+            return false;
+        }
+
+        if (WIFEXITED(status) && (WEXITSTATUS(status) == 0)) {
+            return true;
+        }
+
+        return false;
+
+    }
+
 }
 
 /**
@@ -80,10 +100,6 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
         command[i] = va_arg(args, char *);
     }
     command[count] = NULL;
-    // this line is to avoid a compile warning before your implementation is complete
-    // and may be removed
-    command[count] = command[count];
-
 
 /*
  * TODO
@@ -95,5 +111,38 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
 
     va_end(args);
 
-    return true;
+    int pid = fork();
+    if (pid < 0) {
+        return false; // fork failed
+    } else if (pid == 0) {
+
+        int fd = open(outputfile, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+
+        if (fd < 0) {
+            _exit(EXIT_FAILURE);
+        }
+
+        if (dup2(fd, STDOUT_FILENO) < 0) {
+            close(fd);
+            _exit(EXIT_FAILURE);
+        }
+
+        close(fd);
+
+        execv(command[0], command);
+        _exit(EXIT_FAILURE);
+    } else {
+        int status;
+        if (waitpid(pid, &status, 0) == -1) {
+            return false;
+        }
+
+        if (WIFEXITED(status) && (WEXITSTATUS(status) == 0)) {
+            return true;
+        }
+
+        return false;
+
+    }
+
 }
