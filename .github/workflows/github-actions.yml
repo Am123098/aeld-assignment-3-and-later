@@ -19,6 +19,10 @@ jobs:
         container: cuaesd/aesd-autotest:24-assignment3
         runs-on: ubuntu-latest
         steps:
+          - name: Install Netcat and Dependencies
+            run: |
+              sudo apt-get update
+              sudo apt-get install -y netcat-openbsd valgrind
           - uses: actions/checkout@v2
           - name: Checkout submodules
             run : git submodule update --init --recursive
