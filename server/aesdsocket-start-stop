@@ -1,6 +1,6 @@
 #!/bin/sh
 
-case "$1" bin
+case "$1" in
     start)
         echo "Sarting aesdsocket...."
         start-stop-daemon -S -n aesdsocket -a /usr/bin/aesdsocket -- -d
